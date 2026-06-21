@@ -6,6 +6,7 @@
 
 - **Kernel**: Linux kernel 5.6+ with `CONFIG_TIME_NS=y` enabled.
 - **Privileges**: Can run as root (using direct time namespace unshare) or as an unprivileged user (automatically falling back to user namespaces UID/GID mapping).
+- **Threading**: **Only works for single-threaded applications**. Because `FastForward` performs a `fork()` under the hood to transition to a new time namespace offset, any auxiliary threads running in the parent process will not survive in the child process, which can cause deadlocks and undefined behavior.
 
 ## Public API Reference
 
@@ -126,3 +127,8 @@ int main(int argc, char* argv[]) {
   return orchestrator.Run(argv);
 }
 ```
+
+## License
+
+This library is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
