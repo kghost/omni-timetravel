@@ -1,8 +1,10 @@
-#include <gtest/gtest.h>
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
 #include <unistd.h>
+
+#include <gtest/gtest.h>
+
 #include "../TimeTravel.hpp"
 
 namespace {
@@ -13,17 +15,9 @@ bool g_PostWarpChildCalled = false;
 
 class TestWarpListener : public Omni::TimeTravel::IWarpListener {
 public:
-  void OnPreWarp() override {
-    g_PreWarpCalled = true;
-  }
-
-  void OnPostWarpParent() override {
-    g_PostWarpParentCalled = true;
-  }
-
-  void OnPostWarpChild() override {
-    g_PostWarpChildCalled = true;
-  }
+  void OnPreWarp() override { g_PreWarpCalled = true; }
+  void OnPostWarpParent() override { g_PostWarpParentCalled = true; }
+  void OnPostWarpChild() override { g_PostWarpChildCalled = true; }
 };
 
 } // namespace
@@ -89,10 +83,12 @@ TEST(TimeTravelTest, ErrorHandlingTest) {
   }
 
   // Expect throw because not running under orchestrator
-  EXPECT_THROW({
-    Omni::TimeTravel::Client clientWithoutOrchestrator;
-    clientWithoutOrchestrator.FastForward(std::chrono::seconds(10));
-  }, std::runtime_error);
+  EXPECT_THROW(
+      {
+        Omni::TimeTravel::Client clientWithoutOrchestrator;
+        clientWithoutOrchestrator.FastForward(std::chrono::seconds(10));
+      },
+      std::runtime_error);
 
   // Restore env if it was set
   if (!savedEnv.empty()) {
