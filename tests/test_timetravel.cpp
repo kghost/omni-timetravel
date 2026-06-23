@@ -1,13 +1,24 @@
 #include <chrono>
 #include <cstdlib>
 #include <iostream>
+
+#ifndef _WIN32
 #include <unistd.h>
+#endif
 
 #include <gtest/gtest.h>
 
 #include "../TimeTravel.hpp"
 
 namespace {
+
+#ifdef _WIN32
+int setenv(const char* name, const char* value, int overwrite) {
+  (void)overwrite;
+  return _putenv_s(name, value) == 0 ? 0 : -1;
+}
+int unsetenv(const char* name) { return _putenv_s(name, "") == 0 ? 0 : -1; }
+#endif
 
 bool g_PreWarpCalled = false;
 bool g_PostWarpParentCalled = false;

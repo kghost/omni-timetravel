@@ -8,11 +8,11 @@
 #include <iostream>
 #include <sched.h>
 #include <string>
-#include <system_error>
 #include <sys/prctl.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <sys/wait.h>
+#include <system_error>
 #include <unistd.h>
 
 namespace {
@@ -27,9 +27,7 @@ public:
   UniqueFd(const UniqueFd&) = delete;
   UniqueFd& operator=(const UniqueFd&) = delete;
 
-  UniqueFd(UniqueFd&& other) noexcept : _Fd(other._Fd) {
-    other._Fd = -1;
-  }
+  UniqueFd(UniqueFd&& other) noexcept : _Fd(other._Fd) { other._Fd = -1; }
 
   UniqueFd& operator=(UniqueFd&& other) noexcept {
     if (this != &other) {
@@ -61,11 +59,7 @@ private:
 };
 
 // Protocol definitions
-enum class MsgType : uint8_t {
-  kWarpRequest = 1,
-  kWarpResponse = 2,
-  kTransitionResult = 3
-};
+enum class MsgType : uint8_t { kWarpRequest = 1, kWarpResponse = 2, kTransitionResult = 3 };
 
 struct WarpRequestMsg {
   MsgType Type = MsgType::kWarpRequest;
@@ -126,10 +120,7 @@ bool SendFd(int socket, int fdToSend) {
   struct msghdr msg;
   std::memset(&msg, 0, sizeof(msg));
   char buf[1] = {0};
-  struct iovec io = {
-    .iov_base = buf,
-    .iov_len = sizeof(buf)
-  };
+  struct iovec io = {.iov_base = buf, .iov_len = sizeof(buf)};
   msg.msg_iov = &io;
   msg.msg_iovlen = 1;
 
@@ -157,10 +148,7 @@ int RecvFd(int socket) {
   struct msghdr msg;
   std::memset(&msg, 0, sizeof(msg));
   char buf[1];
-  struct iovec io = {
-    .iov_base = buf,
-    .iov_len = sizeof(buf)
-  };
+  struct iovec io = {.iov_base = buf, .iov_len = sizeof(buf)};
   msg.msg_iov = &io;
   msg.msg_iovlen = 1;
 
@@ -229,8 +217,7 @@ Client::Client() {
 
 Client::~Client() {}
 
-Client::Client(Client&& other) noexcept
-  : _SocketFd(other._SocketFd), _Listener(std::move(other._Listener)) {
+Client::Client(Client&& other) noexcept : _SocketFd(other._SocketFd), _Listener(std::move(other._Listener)) {
   other._SocketFd = -1;
 }
 
@@ -243,9 +230,7 @@ Client& Client::operator=(Client&& other) noexcept {
   return *this;
 }
 
-void Client::RegisterListener(IWarpListener& listener) {
-  _Listener = listener;
-}
+void Client::RegisterListener(IWarpListener& listener) { _Listener = listener; }
 
 void Client::FastForward(std::chrono::nanoseconds duration) {
   if (_SocketFd < 0) {
@@ -478,8 +463,8 @@ int Orchestrator::Run(char** argv) {
       long long secB = _CumulativeBoottimeOffsetNs / 1000000000LL;
       long long nsecB = _CumulativeBoottimeOffsetNs % 1000000000LL;
 
-      std::string offsetStr = "monotonic " + std::to_string(secM) + " " + std::to_string(nsecM) + "\n" +
-                              "boottime " + std::to_string(secB) + " " + std::to_string(nsecB) + "\n";
+      std::string offsetStr = "monotonic " + std::to_string(secM) + " " + std::to_string(nsecM) + "\n" + "boottime " +
+                              std::to_string(secB) + " " + std::to_string(nsecB) + "\n";
       WriteFile("/proc/self/timens_offsets", offsetStr);
     } catch (const std::exception& e) {
       std::cerr << "[Orchestrator] Failed to write timens_offsets during warp: " << e.what() << std::endl;
@@ -523,7 +508,8 @@ int Orchestrator::Run(char** argv) {
     }
 
     if (!result.Success) {
-      std::cerr << "[Orchestrator] Child reported warp transition failure, error code: " << result.ErrorCode << std::endl;
+      std::cerr << "[Orchestrator] Child reported warp transition failure, error code: " << result.ErrorCode
+                << std::endl;
       // The child failed to transition and is still running in its old generation.
       // We keep loop running and do not reap or change _ChildPid.
       continue;

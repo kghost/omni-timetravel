@@ -39,7 +39,11 @@ public:
   void RegisterListener(IWarpListener& listener);
 
 private:
+#ifdef _WIN32
+  bool _IsInitialized = false;
+#else
   int _SocketFd = -1; // Inherited Unix domain socket connection to the parent orchestrator
+#endif
   std::optional<std::reference_wrapper<IWarpListener>> _Listener;
 };
 
@@ -57,13 +61,14 @@ public:
   int Run(char** argv);
 
 private:
+#ifndef _WIN32
   int _ChildPid = -1;
   int _ControlSocketFd = -1;
 
   // Track cumulative offsets to apply to new namespaces
   long long _CumulativeMonotonicOffsetNs = 0;
   long long _CumulativeBoottimeOffsetNs = 0;
+#endif
 };
 
 } // namespace Omni::TimeTravel
-

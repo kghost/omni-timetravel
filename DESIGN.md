@@ -278,3 +278,36 @@ int main(int argc, char* argv[]) {
   return exitCode;
 }
 ```
+
+---
+
+## 5. Windows Implementation (Microsoft Detours)
+
+On Windows, Linux time namespaces and native `fork()` are not available. To achieve identical external behavior and maintain API compatibility, `omni-timetravel` implements Windows support via Microsoft Detours.
+
+### 5.1 Architecture Overview (Windows)
+
+Instead of isolating time offsets at the OS kernel namespace boundary, the Windows implementation intercepts time-query APIs in user space within the child process:
+
+- **Hooked APIs**:
+  - `QueryPerformanceCounter` (used by `std::chrono::steady_clock` under MSVC STL)
+  - `GetTickCount`
+  - `GetTickCount64`
+- **Offset Storage**: Global atomic offsets `g_QpcOffset` and `g_MsecOffset` are updated during `FastForward()` calls.
+- **Process Model**: There is no fork. The client process updates the offsets in-place and runs in a single process context.
+
+### 5.2 Process Orchestration (Windows)
+
+To match the Linux orchestrator execution pattern, the parent-child structure is preserved:
+
+1. **Bootstrap**:
+   - `Orchestrator::Run` is called in the parent process.
+   - It sets environment variables `OMNI_TIMETRAVEL_IS_CHILD=1` and `OMNI_TIMETRAVEL_SOCKET_FD=1` (dummy value).
+   - It spawns the child process via `CreateProcessA` using the same arguments as `argv`, and blocks waiting for it to exit via `WaitForSingleObject`.
+2. **Client Initialization**:
+   - Inside the child process, the `Client` constructor detects `OMNI_TIMETRAVEL_SOCKET_FD` in the environment.
+   - It initializes Detours transactions to attach hooks to `QueryPerformanceCounter`, `GetTickCount`, and `GetTickCount64`.
+3. **Time Warping**:
+   - Calling `FastForward(duration)` validates that the client is initialized, invokes `OnPreWarp()`, converts the duration to QPC ticks (using `QueryPerformanceFrequency`) and milliseconds, adds the calculated values to the global offsets, and invokes `OnPostWarpChild()`.
+4. **Cleanup**:
+   - On `Client` destruction, the detours hooks are detached and offsets are reset.

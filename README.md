@@ -1,12 +1,13 @@
 # OmniTimeTravel
 
-`omni-timetravel` is a lightweight, zero-overhead C++23 library designed to virtualize and manipulate system time (specifically `CLOCK_MONOTONIC` and `CLOCK_BOOTTIME`) using Linux Time Namespaces. It is primarily used for testing integration suites, simulating fast-forwarding, and accelerating tests that rely on steady timeouts without altering the wall-clock time (`CLOCK_REALTIME`).
+`omni-timetravel` is a lightweight, zero-overhead C++23 library designed to virtualize and manipulate system time (specifically `CLOCK_MONOTONIC` and `CLOCK_BOOTTIME`) using Linux Time Namespaces on Linux, and Microsoft Detours on Windows. It is primarily used for testing integration suites, simulating fast-forwarding, and accelerating tests that rely on steady timeouts without altering the wall-clock time (`CLOCK_REALTIME`).
 
 ## Prerequisites
 
-- **Kernel**: Linux kernel 5.6+ with `CONFIG_TIME_NS=y` enabled.
-- **Privileges**: Can run as root (using direct time namespace unshare) or as an unprivileged user (automatically falling back to user namespaces UID/GID mapping).
-- **Threading**: **Only works for single-threaded applications**. Because `FastForward` performs a `fork()` under the hood to transition to a new time namespace offset, any auxiliary threads running in the parent process will not survive in the child process, which can cause deadlocks and undefined behavior.
+- **Linux**: Linux kernel 5.6+ with `CONFIG_TIME_NS=y` enabled.
+- **Windows**: Microsoft Detours (integrated automatically via vcpkg).
+- **Privileges**: On Linux, can run as root (using direct time namespace unshare) or as an unprivileged user (automatically falling back to user namespaces UID/GID mapping). No special privileges are required on Windows.
+- **Threading**: **Only works for single-threaded applications on Linux**. Because `FastForward` on Linux performs a `fork()` under the hood to transition to a new time namespace offset, any auxiliary threads running in the parent process will not survive in the child process, which can cause deadlocks and undefined behavior. On Windows, no `fork()` is performed (user-space hooking is used in-place), but keeping applications single-threaded or synchronized is still recommended for platform consistency.
 
 ## Public API Reference
 
