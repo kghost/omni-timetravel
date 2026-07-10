@@ -8,7 +8,13 @@ namespace Omni::TimeTravel {
 
 class IWarpListener {
 public:
+  explicit IWarpListener() = default;
   virtual ~IWarpListener() = default;
+
+  IWarpListener(const IWarpListener&) = default;
+  auto operator=(const IWarpListener&) -> IWarpListener& = default;
+  IWarpListener(IWarpListener&&) = delete;
+  auto operator=(IWarpListener&&) -> IWarpListener& = delete;
 
   // Invoked in Child Gen N before transitioning.
   virtual void OnPreWarp() {}
@@ -28,9 +34,9 @@ public:
   ~Client();
 
   Client(const Client&) = delete;
-  Client& operator=(const Client&) = delete;
+  auto operator=(const Client&) -> Client& = delete;
   Client(Client&&) noexcept;
-  Client& operator=(Client&&) noexcept;
+  auto operator=(Client&&) noexcept -> Client&;
 
   // Move the monotonic clock forward by the given duration
   void FastForward(std::chrono::nanoseconds duration);
@@ -49,16 +55,17 @@ private:
 
 class Orchestrator {
 public:
-  Orchestrator();
-
+  explicit Orchestrator();
   ~Orchestrator();
 
+  Orchestrator(Orchestrator&&) = delete;
+  auto operator=(Orchestrator&&) -> Orchestrator& = delete;
   Orchestrator(const Orchestrator&) = delete;
-  Orchestrator& operator=(const Orchestrator&) = delete;
+  auto operator=(const Orchestrator&) -> Orchestrator& = delete;
 
   // Spawns the child (by forking and re-executing argv) and starts the orchestrator loop.
   // Returns the exit status code of the last active child process.
-  int Run(char** argv);
+  auto Run(char** argv) -> int;
 
 private:
 #ifndef _WIN32

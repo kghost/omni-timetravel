@@ -107,7 +107,7 @@ TEST(TimeTravelTest, ErrorHandlingTest) {
   }
 }
 
-int main(int argc, char* argv[]) {
+auto main(int argc, char* argv[]) -> int {
   if (std::getenv("OMNI_TIMETRAVEL_IS_CHILD")) {
     std::cout << "[Child] Running Google Test suite..." << std::endl;
     testing::InitGoogleTest(&argc, argv);

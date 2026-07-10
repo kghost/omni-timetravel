@@ -25,11 +25,11 @@ public:
   ~UniqueFd() { Reset(); }
 
   UniqueFd(const UniqueFd&) = delete;
-  UniqueFd& operator=(const UniqueFd&) = delete;
+  auto operator=(const UniqueFd&) -> UniqueFd& = delete;
 
   UniqueFd(UniqueFd&& other) noexcept : _Fd(other._Fd) { other._Fd = -1; }
 
-  UniqueFd& operator=(UniqueFd&& other) noexcept {
+  auto operator=(UniqueFd&& other) noexcept -> UniqueFd& {
     if (this != &other) {
       Reset();
       _Fd = other._Fd;
@@ -38,10 +38,10 @@ public:
     return *this;
   }
 
-  int Get() const noexcept { return _Fd; }
-  bool IsValid() const noexcept { return _Fd >= 0; }
+  auto Get() const noexcept -> int { return _Fd; }
+  auto IsValid() const noexcept -> bool { return _Fd >= 0; }
 
-  int Release() noexcept {
+  auto Release() noexcept -> int {
     int ret = _Fd;
     _Fd = -1;
     return ret;
@@ -79,7 +79,7 @@ struct TransitionResultMsg {
 };
 
 // Sends exactly 'length' bytes over the socket.
-bool SendAll(int socket, const void* buffer, size_t length) {
+auto SendAll(int socket, const void* buffer, size_t length) -> bool {
   size_t totalSent = 0;
   const char* ptr = static_cast<const char*>(buffer);
   while (totalSent < length) {
@@ -96,7 +96,7 @@ bool SendAll(int socket, const void* buffer, size_t length) {
 }
 
 // Receives exactly 'length' bytes from the socket.
-bool RecvAll(int socket, void* buffer, size_t length) {
+auto RecvAll(int socket, void* buffer, size_t length) -> bool {
   size_t totalRecv = 0;
   char* ptr = static_cast<char*>(buffer);
   while (totalRecv < length) {
@@ -116,7 +116,7 @@ bool RecvAll(int socket, void* buffer, size_t length) {
 }
 
 // Sends a file descriptor over a Unix domain socket.
-bool SendFd(int socket, int fdToSend) {
+auto SendFd(int socket, int fdToSend) -> bool {
   struct msghdr msg;
   std::memset(&msg, 0, sizeof(msg));
   char buf[1] = {0};
@@ -144,7 +144,7 @@ bool SendFd(int socket, int fdToSend) {
 }
 
 // Receives a file descriptor over a Unix domain socket.
-int RecvFd(int socket) {
+auto RecvFd(int socket) -> int {
   struct msghdr msg;
   std::memset(&msg, 0, sizeof(msg));
   char buf[1];
@@ -174,7 +174,7 @@ int RecvFd(int socket) {
 }
 
 // Sets send/recv timeout on a socket.
-bool SetSocketTimeout(int socket, int seconds) {
+auto SetSocketTimeout(int socket, int seconds) -> bool {
   struct timeval tv;
   tv.tv_sec = seconds;
   tv.tv_usec = 0;
@@ -221,7 +221,7 @@ Client::Client(Client&& other) noexcept : _SocketFd(other._SocketFd), _Listener(
   other._SocketFd = -1;
 }
 
-Client& Client::operator=(Client&& other) noexcept {
+auto Client::operator=(Client&& other) noexcept -> Client& {
   if (this != &other) {
     _SocketFd = other._SocketFd;
     _Listener = std::move(other._Listener);
@@ -351,7 +351,7 @@ Orchestrator::~Orchestrator() {
   }
 }
 
-int Orchestrator::Run(char** argv) {
+auto Orchestrator::Run(char** argv) -> int {
   uid_t hostUid = getuid();
   gid_t hostGid = getgid();
 
