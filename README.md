@@ -80,7 +80,14 @@ public:
 
 ## Integration with Event Loops (e.g., Boost.Asio)
 
-Since `FastForward` performs a `fork()` under the hood, any event loop or system descriptors must handle fork notifications.
+When integrating `omni-timetravel` with event loops such as `boost::asio::io_context`, fast-forwarding requires specific handling depending on the operating system:
+
+- **Linux**: `FastForward` performs a process `fork()` to transition to a new time namespace. The event loop must be notified of the fork (e.g., calling `_Io.notify_fork(...)`) to recreate internal `epoll` or `io_uring` file descriptors.
+- **Windows**: Microsoft Detours hooks `QueryPerformanceCounter` in user space without forking. However, Boost.Asio's `win_iocp_io_context` utilizes a dedicated internal timer thread (`timer_thread_`) that may be sleeping in an OS kernel wait (`::Sleep` / `::WaitForSingleObject`) for an already-scheduled steady timer. To force the timer thread to wake up immediately and re-evaluate timer expiries against the updated QPC offset:
+  1. Post an event to the IOCP completion queue (`boost::asio::post`).
+  2. Register a dummy `steady_timer` with `expires_at(std::chrono::steady_clock::time_point::min())`. Placing a timer at `time_point::min()` places it at the head of Boost.Asio's internal timer queue, interrupting kernel sleep instantly.
+
+### Recommended `IWarpListener` Implementation
 
 ```cpp
 class AsioWarpListener : public Omni::TimeTravel::IWarpListener {
@@ -88,12 +95,27 @@ public:
   explicit AsioWarpListener(boost::asio::io_context& io) : _Io(io) {}
 
   void OnPreWarp() override {
-    // Suspend or pause event loops if needed.
+#ifndef _WIN32
+    _Io.notify_fork(boost::asio::io_context::fork_prepare);
+#endif
+  }
+
+  void OnPostWarpParent() override {
+#ifndef _WIN32
+    _Io.notify_fork(boost::asio::io_context::fork_parent);
+#endif
   }
 
   void OnPostWarpChild() override {
-    // Re-initialize epoll/io_uring state after fork.
-    _Io.notify_fork(boost::asio::fork_child);
+#ifndef _WIN32
+    _Io.notify_fork(boost::asio::io_context::fork_child);
+#else
+    // On Windows, wake up the IOCP completion port and interrupt Boost.Asio's timer thread
+    boost::asio::post(_Io, [] {});
+    auto dummyTimer = std::make_shared<boost::asio::steady_timer>(_Io);
+    dummyTimer->expires_at(std::chrono::steady_clock::time_point::min());
+    dummyTimer->async_wait([dummyTimer](const boost::system::error_code&) {});
+#endif
   }
 
 private:
