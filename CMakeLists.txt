@@ -38,7 +38,7 @@ foreach(suffix "" "-asan")
   )
 
   if(WIN32)
-    target_compile_options(${target} PRIVATE /W3 /Od)
+    target_compile_options(${target} PRIVATE /W3)
     target_include_directories(${target} PUBLIC ${DETOURS_INCLUDE_DIRS})
     target_link_libraries(${target} PUBLIC ${DETOURS_LIBRARY})
   else()
